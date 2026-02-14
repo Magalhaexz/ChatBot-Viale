@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Administrativo - VIALE TURISMO</title>
+
+  <!-- Chart.js (gráficos) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
+      background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      min-height:100vh;
+      padding:20px;
+    }
+    .container{max-width:1400px;margin:0 auto}
+    header{
+      background:#fff;padding:22px;border-radius:15px;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);
+      margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;
+      flex-wrap:wrap;gap:12px
+    }
+    header h1{color:#667eea;font-size:22px;display:flex;align-items:center;gap:10px}
+    .header-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn{
+      padding:11px 16px;border:none;border-radius:10px;font-size:13px;font-weight:800;
+      cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px
+    }
+    .btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(102,126,234,.35)}
+    .btn-success{background:#10b981;color:#fff}
+    .btn-success:hover{background:#059669;transform:translateY(-1px);box-shadow:0 6px 14px rgba(16,185,129,.35)}
+    .btn-info{background:#3b82f6;color:#fff}
+    .btn-info:hover{background:#2563eb;transform:translateY(-1px)}
+    .auto-refresh{display:flex;align-items:center;gap:8px;color:#666;font-size:12px}
+    .auto-refresh .dot{width:8px;height:8px;background:#10b981;border-radius:50%;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+    .grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:12px;margin-bottom:12px
+    }
+    .card{
+      background:#fff;padding:16px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.1)
+    }
+    .card h3{color:#666;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+    .card .value{font-size:30px;font-weight:900;color:#667eea}
+    .card .sub{margin-top:6px;color:#777;font-size:12px}
+
+    .section{
+      background:#fff;padding:16px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.1);
+      margin-bottom:12px
+    }
+    .section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+    .section-title h2{font-size:16px;color:#333}
+    .muted{color:#6b7280;font-size:12px}
+
+    .controls{
+      display:flex;gap:12px;flex-wrap:wrap;align-items:center
+    }
+    .controls input{
+      flex:1;min-width:240px;
+      padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px
+    }
+    .controls input:focus{outline:none;border-color:#667eea}
+    .select{
+      padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;background:#fff
+    }
+
+    .charts{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:12px
+    }
+    .chart-box{border:1px solid #eef2ff;border-radius:12px;padding:12px}
+    canvas{max-height:280px}
+
+    .filter-buttons{display:flex;gap:8px;flex-wrap:wrap}
+    .filter-btn{
+      padding:8px 12px;border:2px solid #e5e7eb;background:#fff;border-radius:10px;
+      cursor:pointer;transition:.2s;font-size:12px;font-weight:800;color:#444
+    }
+    .filter-btn.active{border-color:#667eea;background:#667eea;color:#fff}
+    .filter-btn:hover{border-color:#667eea}
+
+    .table-container{overflow-x:auto;border-radius:12px;border:1px solid #eef2ff}
+    table{width:100%;border-collapse:collapse}
+    th{
+      background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      color:#fff;padding:12px;text-align:left;font-weight:900;position:sticky;top:0;font-size:12px
+    }
+    td{padding:12px;border-bottom:1px solid #e5e7eb;font-size:13px;vertical-align:middle}
+    tr:hover{background:#f9fafb}
+    .loading,.no-data{text-align:center;padding:28px;color:#667eea}
+    .protocol{font-weight:900;color:#667eea}
+    .mono{font-family:'Courier New',monospace}
+
+    .badge{padding:5px 10px;border-radius:999px;font-size:11px;font-weight:900;display:inline-block}
+    .badge-aereo{background:#dbeafe;color:#1e40af}
+    .badge-hotel{background:#fde68a;color:#92400e}
+    .badge-completo{background:#d1fae5;color:#065f46}
+    .badge-outro{background:#e5e7eb;color:#374151}
+
+    .badge-novo{background:#eef2ff;color:#3730a3}
+    .badge-atend{background:#dcfce7;color:#166534}
+    .badge-fechado{background:#fee2e2;color:#991b1b}
+
+    .pill-link{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:7px 10px;border-radius:999px;border:1px solid #e5e7eb;
+      text-decoration:none;color:#111827;font-weight:900;font-size:12px
+    }
+    .pill-link:hover{border-color:#667eea}
+
+    .action-btn{
+      padding:7px 10px;border-radius:10px;border:1px solid #e5e7eb;
+      background:#fff;cursor:pointer;font-weight:900;font-size:12px;
+      transition:.15s
+    }
+    .action-btn:hover{border-color:#667eea;transform:translateY(-1px)}
+    .action-row{display:flex;gap:6px;flex-wrap:wrap}
+
+    .toast{
+      position:fixed;bottom:22px;right:22px;background:#fff;padding:14px 16px;border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);display:none;align-items:center;gap:10px;z-index:1000
+    }
+    .toast.show{display:flex}
+    .toast.success{border-left:4px solid #10b981}
+    .toast.error{border-left:4px solid #ef4444}
+    .toast.info{border-left:4px solid #3b82f6}
+
+    @media (max-width:768px){
+      header{justify-content:center}
+      .header-actions{justify-content:center}
+      th,td{padding:10px;font-size:12px}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1><span>🤖</span> Painel Administrativo — <strong>VIALE TURISMO</strong></h1>
+      <div class="header-actions">
+        <button class="btn btn-success" onclick="downloadExcel()">📥 Baixar Excel</button>
+        <button class="btn btn-info" onclick="refreshData()">🔄 Atualizar</button>
+        <div class="auto-refresh"><span class="dot"></span><span>Auto-refresh (30s)</span></div>
+      </div>
+    </header>
+
+    <!-- Cards gerais -->
+    <div class="grid">
+      <div class="card">
+        <h3>Total de Leads</h3>
+        <div class="value" id="totalLeads">-</div>
+        <div class="sub" id="totalLeadsSub">—</div>
+      </div>
+      <div class="card">
+        <h3>Leads Hoje</h3>
+        <div class="value" id="leadsToday">-</div>
+        <div class="sub">últimas 24h</div>
+      </div>
+      <div class="card">
+        <h3>Esta Semana</h3>
+        <div class="value" id="leadsWeek">-</div>
+        <div class="sub">últimos 7 dias</div>
+      </div>
+      <div class="card">
+        <h3>Este Mês</h3>
+        <div class="value" id="leadsMonth">-</div>
+        <div class="sub">mês atual</div>
+      </div>
+    </div>
+
+    <!-- Cards por atendente -->
+    <div class="section">
+      <div class="section-title">
+        <h2>👩‍💼 Leads por atendente</h2>
+        <span class="muted">contagem baseada no campo atendente_nome</span>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>Milene</h3>
+          <div class="value" id="mileneCount">0</div>
+          <div class="sub">leads atribuídos</div>
+        </div>
+        <div class="card">
+          <h3>Leane</h3>
+          <div class="value" id="leaneCount">0</div>
+          <div class="sub">leads atribuídos</div>
+        </div>
+        <div class="card">
+          <h3>Danubia</h3>
+          <div class="value" id="danubiaCount">0</div>
+          <div class="sub">leads atribuídos</div>
+        </div>
+        <div class="card">
+          <h3>Sem atendente</h3>
+          <div class="value" id="noAttendantCount">0</div>
+          <div class="sub">leads antigos/sem escolha</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="section">
+      <div class="section-title">
+        <h2>📌 Pipeline</h2>
+        <span class="muted">Novo → Em atendimento → Fechado</span>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>Novo</h3>
+          <div class="value" id="pipeNovo">0</div>
+          <div class="sub">entrada de leads</div>
+        </div>
+        <div class="card">
+          <h3>Em atendimento</h3>
+          <div class="value" id="pipeAtend">0</div>
+          <div class="sub">em conversa/negociação</div>
+        </div>
+        <div class="card">
+          <h3>Fechado</h3>
+          <div class="value" id="pipeFechado">0</div>
+          <div class="sub">conversão</div>
+        </div>
+        <div class="card">
+          <h3>Outros</h3>
+          <div class="value" id="pipeOutros">0</div>
+          <div class="sub">status antigos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="section">
+      <div class="section-title">
+        <h2>📊 Top Destinos e Tipos</h2>
+        <span class="muted">baseado em /api/stats</span>
+      </div>
+
+      <div class="charts">
+        <div class="chart-box">
+          <div class="muted" style="margin-bottom:8px;">Top Destinos</div>
+          <canvas id="destinationsChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="muted" style="margin-bottom:8px;">Top Tipos</div>
+          <canvas id="typesChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="section">
+      <div class="section-title">
+        <h2>🔎 Busca e filtros</h2>
+        <span class="muted">filtra tabela em tempo real</span>
+      </div>
+      <div class="controls">
+        <input id="searchInput" type="text"
+          placeholder="Buscar por telefone, destino, tipo, período, orçamento, atendente, status..."
+          onkeyup="applyFilters()"
+        />
+
+        <select class="select" id="attendantSelect" onchange="applyFilters()">
+          <option value="all">👩‍💼 Todas as atendentes</option>
+          <option value="Milene">Milene</option>
+          <option value="Leane">Leane</option>
+          <option value="Danubia">Danubia</option>
+          <option value="none">Sem atendente</option>
+        </select>
+
+        <select class="select" id="pipelineSelect" onchange="applyFilters()">
+          <option value="all">📌 Pipeline (todos)</option>
+          <option value="Novo">Novo</option>
+          <option value="Em atendimento">Em atendimento</option>
+          <option value="Fechado">Fechado</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="section">
+      <div class="section-title">
+        <h2>📋 Leads</h2>
+        <div class="filter-buttons">
+          <button class="filter-btn active" onclick="filterByType('all', event)">Todos</button>
+          <button class="filter-btn" onclick="filterByType('Somente Aéreo', event)">✈️ Aéreo</button>
+          <button class="filter-btn" onclick="filterByType('Aéreo + Hotel', event)">🏨 Hotel</button>
+          <button class="filter-btn" onclick="filterByType('Pacote Completo', event)">🎒 Completo</button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Protocolo</th>
+              <th>Data/Hora</th>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th>Destino</th>
+              <th>Período</th>
+              <th>Passageiros</th>
+              <th>Orçamento</th>
+              <th>Atendente</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody">
+            <tr><td colspan="11" class="loading">Carregando dados...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span id="toastIcon">✅</span>
+    <span id="toastMessage">Mensagem</span>
+  </div>
+
+  <script>
+    let allLeads = [];
+    let currentTypeFilter = 'all';
+
+    let destinationsChart = null;
+    let typesChart = null;
+
+    function formatDate(dateString){
+      const d = new Date(dateString);
+      return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
+
+    function getTypeBadge(tipo){
+      if(!tipo) return {cls:'badge-outro', label:'-'};
+      if(tipo.includes('Somente Aéreo')) return {cls:'badge-aereo', label:'Somente Aéreo'};
+      if(tipo.includes('Aéreo + Hotel')) return {cls:'badge-hotel', label:'Aéreo + Hotel'};
+      if(tipo.includes('Pacote Completo')) return {cls:'badge-completo', label:'Pacote Completo'};
+      return {cls:'badge-outro', label: tipo};
+    }
+
+    function getPipelineBadge(status){
+      const s = (status || 'Novo');
+      if(s === 'Novo') return {cls:'badge-novo', label:s};
+      if(s === 'Em atendimento') return {cls:'badge-atend', label:s};
+      if(s === 'Fechado') return {cls:'badge-fechado', label:s};
+      return {cls:'badge-outro', label:s};
+    }
+
+    function waLink(number){
+      const n = (number || '').replace(/\D/g,'');
+      if(!n) return '';
+      if(n.length === 11) return `https://wa.me/55${n}`;
+      if(n.length === 13 && n.startsWith('55')) return `https://wa.me/${n}`;
+      return `https://wa.me/${n}`;
+    }
+
+    function countByAttendant(leads){
+      const out = { Milene:0, Leane:0, Danubia:0, none:0 };
+      (leads || []).forEach(l => {
+        const a = (l.atendente_nome || '').trim();
+        if(a === 'Milene') out.Milene++;
+        else if(a === 'Leane') out.Leane++;
+        else if(a === 'Danubia') out.Danubia++;
+        else out.none++;
+      });
+      return out;
+    }
+
+    function countPipeline(leads){
+      const out = { novo:0, atend:0, fechado:0, outros:0 };
+      (leads || []).forEach(l => {
+        const st = (l.status || 'Novo');
+        if(st === 'Novo') out.novo++;
+        else if(st === 'Em atendimento') out.atend++;
+        else if(st === 'Fechado') out.fechado++;
+        else out.outros++;
+      });
+      return out;
+    }
+
+    function updateAttendantCards(){
+      const c = countByAttendant(allLeads);
+      document.getElementById('mileneCount').textContent = c.Milene;
+      document.getElementById('leaneCount').textContent = c.Leane;
+      document.getElementById('danubiaCount').textContent = c.Danubia;
+      document.getElementById('noAttendantCount').textContent = c.none;
+
+      document.getElementById('totalLeadsSub').textContent =
+        `Milene: ${c.Milene} • Leane: ${c.Leane} • Danubia: ${c.Danubia} • Sem: ${c.none}`;
+    }
+
+    function updatePipelineCards(){
+      const p = countPipeline(allLeads);
+      document.getElementById('pipeNovo').textContent = p.novo;
+      document.getElementById('pipeAtend').textContent = p.atend;
+      document.getElementById('pipeFechado').textContent = p.fechado;
+      document.getElementById('pipeOutros').textContent = p.outros;
+    }
+
+    function updateStats(stats){
+      document.getElementById('totalLeads').textContent = stats.total || 0;
+      document.getElementById('leadsToday').textContent = stats.today || 0;
+      document.getElementById('leadsWeek').textContent = stats.thisWeek || 0;
+      document.getElementById('leadsMonth').textContent = stats.thisMonth || 0;
+    }
+
+    function renderCharts(stats){
+      if(typeof Chart === 'undefined') return;
+
+      const dest = (stats.topDestinations || []);
+      const types = (stats.topTravelTypes || []);
+
+      const destLabels = dest.map(d => d.destino);
+      const destCounts = dest.map(d => d.count);
+
+      const typeLabels = types.map(t => t.tipo);
+      const typeCounts = types.map(t => t.count);
+
+      // Destroy antigos para evitar duplicar
+      if(destinationsChart) destinationsChart.destroy();
+      if(typesChart) typesChart.destroy();
+
+      const ctx1 = document.getElementById('destinationsChart');
+      const ctx2 = document.getElementById('typesChart');
+
+      destinationsChart = new Chart(ctx1, {
+        type: 'bar',
+        data: { labels: destLabels, datasets: [{ label: 'Leads', data: destCounts }] },
+        options: { responsive:true, plugins:{ legend:{ display:false } } }
+      });
+
+      typesChart = new Chart(ctx2, {
+        type: 'bar',
+        data: { labels: typeLabels, datasets: [{ label: 'Leads', data: typeCounts }] },
+        options: { responsive:true, plugins:{ legend:{ display:false } } }
+      });
+    }
+
+    function renderLeads(leads){
+      const tbody = document.getElementById('leadsTableBody');
+
+      if(!leads || leads.length === 0){
+        tbody.innerHTML = '<tr><td colspan="11" class="no-data">Nenhum lead encontrado</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = leads.map(lead => {
+        const type = getTypeBadge(lead.tipo_viagem);
+        const pipeline = getPipelineBadge(lead.status || 'Novo');
+
+        const attendantName = lead.atendente_nome || '-';
+        const attendantPhone = lead.atendente_numero || '';
+        const customerPhone = lead.phone || '';
+
+        const attendantHref = attendantPhone ? waLink(attendantPhone) : '';
+        const customerHref = customerPhone ? waLink(customerPhone) : '';
+
+        const passageiros = lead.num_passageiros || lead.pessoas || '-';
+
+        return `
+          <tr>
+            <td class="protocol">#${lead.id}</td>
+            <td>${formatDate(lead.created_at)}</td>
+            <td class="mono">${customerPhone || '-'}</td>
+            <td><span class="badge ${type.cls}">${type.label}</span></td>
+            <td>${lead.destino || '-'}</td>
+            <td>${lead.periodo || '-'}</td>
+            <td>${passageiros}</td>
+            <td>${lead.orcamento || '-'}</td>
+            <td>${attendantName}</td>
+            <td><span class="badge ${pipeline.cls}">${pipeline.label}</span></td>
+            <td>
+              <div class="action-row">
+                ${customerHref ? `<a class="pill-link" href="${customerHref}" target="_blank">💬 Cliente</a>` : ''}
+                ${attendantHref ? `<a class="pill-link" href="${attendantHref}" target="_blank">👩‍💼 Atendente</a>` : ''}
+              </div>
+              <div class="action-row" style="margin-top:8px;">
+                <button class="action-btn" onclick="setStatus(${lead.id}, 'Novo')">Novo</button>
+                <button class="action-btn" onclick="setStatus(${lead.id}, 'Em atendimento')">Em atendimento</button>
+                <button class="action-btn" onclick="setStatus(${lead.id}, 'Fechado')">Fechado</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function applyFilters(){
+      const searchTerm = (document.getElementById('searchInput').value || '').toLowerCase();
+      const attendant = document.getElementById('attendantSelect').value;
+      const pipeline = document.getElementById('pipelineSelect').value;
+
+      let filtered = allLeads.slice();
+
+      // Tipo
+      if(currentTypeFilter !== 'all'){
+        filtered = filtered.filter(l => (l.tipo_viagem || '').includes(currentTypeFilter));
+      }
+
+      // Atendente
+      if(attendant !== 'all'){
+        if(attendant === 'none'){
+          filtered = filtered.filter(l => !(l.atendente_nome || '').trim());
+        } else {
+          filtered = filtered.filter(l => (l.atendente_nome || '').includes(attendant));
+        }
+      }
+
+      // Pipeline
+      if(pipeline !== 'all'){
+        filtered = filtered.filter(l => (l.status || 'Novo') === pipeline);
+      }
+
+      // Busca
+      if(searchTerm){
+        filtered = filtered.filter(l => {
+          const passageiros = l.num_passageiros || l.pessoas || '';
+          return (
+            (l.phone || '').toLowerCase().includes(searchTerm) ||
+            (l.destino || '').toLowerCase().includes(searchTerm) ||
+            (l.tipo_viagem || '').toLowerCase().includes(searchTerm) ||
+            (l.periodo || '').toLowerCase().includes(searchTerm) ||
+            (l.orcamento || '').toLowerCase().includes(searchTerm) ||
+            (l.atendente_nome || '').toLowerCase().includes(searchTerm) ||
+            (l.status || '').toLowerCase().includes(searchTerm) ||
+            String(passageiros).toLowerCase().includes(searchTerm)
+          );
+        });
+      }
+
+      renderLeads(filtered);
+    }
+
+    function filterByType(type, ev){
+      currentTypeFilter = type;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      if(ev && ev.target) ev.target.classList.add('active');
+      applyFilters();
+    }
+
+    async function setStatus(id, status){
+      try{
+        showToast(`Atualizando #${id}…`, 'info');
+
+        const resp = await fetch(`/api/leads/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+
+        const data = await resp.json();
+        if(!resp.ok || !data.success){
+          throw new Error(data.error || 'Falha ao atualizar status');
+        }
+
+        showToast(`Status atualizado: ${status} ✅`, 'success');
+        await loadData();
+      }catch(err){
+        console.error(err);
+        showToast('Erro ao atualizar status', 'error');
+      }
+    }
+
+    async function loadData(){
+      try{
+        const [leadsResponse, statsResponse] = await Promise.all([
+          fetch('/api/leads'),
+          fetch('/api/stats')
+        ]);
+
+        const leadsData = await leadsResponse.json();
+        const statsData = await statsResponse.json();
+
+        if(leadsData.success){
+          allLeads = leadsData.leads || [];
+
+          // Atualiza cards extras
+          updateAttendantCards();
+          updatePipelineCards();
+
+          applyFilters();
+        }
+
+        if(statsData.success){
+          updateStats(statsData.stats || {});
+          renderCharts(statsData.stats || {});
+        }
+      }catch(err){
+        console.error(err);
+        showToast('Erro ao carregar dados', 'error');
+      }
+    }
+
+    async function downloadExcel(){
+      try{
+        showToast('Preparando Excel...', 'info');
+        const response = await fetch('/api/export/excel');
+        if(!response.ok) throw new Error('Erro ao gerar Excel');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `orcamentos-viale-turismo-${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('Excel baixado com sucesso ✅', 'success');
+      }catch(err){
+        console.error(err);
+        showToast('Erro ao baixar Excel', 'error');
+      }
+    }
+
+    function refreshData(){
+      showToast('Atualizando...', 'info');
+      loadData();
+    }
+
+    function showToast(message, type='success'){
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const msg = document.getElementById('toastMessage');
+
+      icon.textContent = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+      msg.textContent = message;
+
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    setInterval(loadData, 30000);
+    loadData();
+  </script>
+</body>
+</html>

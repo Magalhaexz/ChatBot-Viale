@@ -1,0 +1,32 @@
+{
+  "name": "chatbot-viagens-completo",
+  "version": "2.0.0",
+  "description": "Sistema completo de atendimento automatizado para agências de viagens via WhatsApp com painel administrativo, envio de email e exportação Excel.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test-email": "node test-email.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "whatsapp",
+    "chatbot",
+    "viagens",
+    "excel",
+    "email"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "basic-auth": "^2.0.1",
+    "dotenv": "^16.3.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.18.2",
+    "googleapis": "^128.0.0",
+    "nodemailer": "^6.9.7",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0"
+  }
+}
